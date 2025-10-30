@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Mini AI Prompt App 🤖</title>
+  <style>
+    body {
+      font-family: system-ui, sans-serif;
+      max-width: 700px;
+      margin: 2rem auto;
+      padding: 1rem;
+      background: #f9fafb;
+      color: #222;
+    }
+    h1 {
+      text-align: center;
+    }
+    textarea {
+      width: 100%;
+      height: 80px;
+      padding: 0.8rem;
+      font-size: 1rem;
+      border-radius: 8px;
+      border: 1px solid #ccc;
+      resize: none;
+    }
+    button {
+      padding: 0.6rem 1.2rem;
+      font-size: 1rem;
+      border: none;
+      border-radius: 8px;
+      margin-top: 0.5rem;
+      background-color: #007bff;
+      color: white;
+      cursor: pointer;
+    }
+    button:disabled {
+      background: #aaa;
+    }
+    .error {
+      color: red;
+      margin-top: 1rem;
+    }
+    .response, .history {
+      background: #fff;
+      padding: 1rem;
+      margin-top: 1rem;
+      border-radius: 8px;
+      border: 1px solid #ddd;
+    }
+    .history-item {
+      margin-bottom: 1rem;
+    }
+    .clear {
+      background: crimson;
+      margin-top: 1rem;
+    }
+  </style>
+</head>
+<body>
+  <h1>Mini AI Prompt App 🤖</h1>
+
+  <textarea id="prompt" placeholder="Type your prompt here..."></textarea><br/>
+  <button id="submit">Submit</button>
+  <button id="clear" class="clear">Clear History</button>
+
+  <div id="loading" style="display:none;">⏳ Thinking...</div>
+  <div id="error" class="error"></div>
+  <div id="response" class="response"></div>
+
+  <div id="history" class="history">
+    <h3>Chat History</h3>
+    <div id="historyList"></div>
+  </div>
+
+  <script>
+    const promptEl = document.getElementById("prompt");
+    const submitBtn = document.getElementById("submit");
+    const clearBtn = document.getElementById("clear");
+    const responseEl = document.getElementById("response");
+    const historyList = document.getElementById("historyList");
+    const errorEl = document.getElementById("error");
+    const loadingEl = document.getElementById("loading");
+
+    let history = [];
+
+    async function getAIResponse(prompt) {
+      const API_KEY = "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"; // ⚠️ Use a backend proxy in production!
+      const url = "https://api.openai.com/v1/chat/completions";
+
+      const res = await fetch(url, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${API_KEY}`,
+        },
+        body: JSON.stringify({
+          model: "gpt-3.5-turbo",
+          messages: [{ role: "user", content: prompt }],
+        }),
+      });
+
+      if (!res.ok) {
+        const error = await res.json();
+        throw new Error(error.error?.message || "API error");
+      }
+
+      const data = await res.json();
+      return data.choices[0].message.content;
+    }
+
+    async function handleSubmit() {
+      const prompt = promptEl.value.trim();
+      if (!prompt) return;
+
+      errorEl.textContent = "";
+      responseEl.textContent = "";
+      loadingEl.style.display = "block";
+      submitBtn.disabled = true;
+
+      try {
+        const answer = await getAIResponse(prompt);
+        responseEl.textContent = answer;
+
+        // Save to history
+        history.push({ prompt, response: answer });
+        renderHistory();
+        promptEl.value = "";
+      } catch (err) {
+        errorEl.textContent = "⚠️ " + err.message;
+      } finally {
+        loadingEl.style.display = "none";
+        submitBtn.disabled = false;
+      }
+    }
+
+    function renderHistory() {
+      historyList.innerHTML = "";
+      history.forEach((item) => {
+        const div = document.createElement("div");
+        div.className = "history-item";
+        div.innerHTML = `<strong>Prompt:</strong> ${item.prompt}<br/>
+                         <strong>Response:</strong> ${item.response}`;
+        historyList.appendChild(div);
+      });
+    }
+
+    function clearHistory() {
+      history = [];
+      renderHistory();
+      responseEl.textContent = "";
+    }
+
+    submitBtn.addEventListener("click", handleSubmit);
+    clearBtn.addEventListener("click", clearHistory);
+  </script>
+</body>
+</html>
