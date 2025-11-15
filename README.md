@@ -1,5 +1,6 @@
 # scaling-octo-couscous
-For Servimatt
+
+A small web page for making requests to openAI.
 
 This should work as-is, but a valid API Key is needed (with token credits).
 
